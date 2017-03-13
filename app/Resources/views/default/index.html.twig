@@ -1,0 +1,48 @@
+{% extends 'base.html.twig' %}
+
+{% block body %}
+    <div id="wrapper">
+        <div id="container">
+            <div id="welcome">
+                <a href="{{ path('facebook_logon_step1') }}">Login with Facebook (PHP)</a>
+                <button id="fb_login_js">Login with Facebook (JS)</button>
+                <div id="status"></div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block stylesheets %}{% endblock %}
+{% block javascripts %}
+<script>
+    window.fbAsyncInit = function() {
+        FB.init({
+            appId      : '1837790199808356',
+            xfbml      : true,
+            version    : 'v2.8'
+        });
+        FB.AppEvents.logPageView();
+    };
+
+    (function(d, s, id){
+        var js, fjs = d.getElementsByTagName(s)[0];
+        if (d.getElementById(id)) {return;}
+        js = d.createElement(s); js.id = id;
+        js.src = "//connect.facebook.net/en_US/sdk.js";
+        fjs.parentNode.insertBefore(js, fjs);
+        document.getElementById('fb_login_js').addEventListener('click', function(e) {
+            FB.login(function (response) {
+                if (response.status === 'connected') {
+                    FB.api('/me', function(response) {
+                        console.log('Successful login for: ' + response.name);
+                        document.getElementById('status').innerHTML =
+                            'Thanks for logging in, ' + response.name + '!';
+                    });
+                } else {
+                    alert('Lol nope.');
+                }
+            });
+        });
+    }(document, 'script', 'facebook-jssdk'));
+</script>
+{% endblock %}

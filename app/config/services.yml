@@ -1,0 +1,20 @@
+# Learn more about services, parameters and containers at
+# http://symfony.com/doc/current/service_container.html
+parameters:
+    #parameter_name: value
+
+services:
+    login_service:
+      class: AppBundle\Service\LoginService
+      arguments: ['%nhm_api_url%', '%facebook_app_id%', '%facebook_client_secret%', @session, @circle.restclient, @logger]
+    locale_listener:
+      class: AppBundle\EventListener\LocaleListener
+      arguments: ["%locale%", @logger]
+      tags:
+            - { name: kernel.event_subscriber }
+    request_listener:
+      class: AppBundle\EventListener\RequestListener
+      arguments: [@session, @translator, @logger]
+      tags:
+            - { name: kernel.event_listener, event: kernel.controller, method: onKernelController }
+            - { name: kernel.event_listener, event: kernel.response, method: onKernelResponse }
