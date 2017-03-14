@@ -22,3 +22,6 @@ parameters:
 
     facebook_app_id: 1837790199808356
     facebook_client_secret: 2837d08acce8c08afffe8c2281cb339f
+
+    google_client_id: 517804749738-an4ddbsk404su5oung88v1pljofep23a.apps.googleusercontent.com
+    google_client_secret: _SZ4IOQzyo5xI5eYK0BQk6EA

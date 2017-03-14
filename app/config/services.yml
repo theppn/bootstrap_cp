@@ -6,7 +6,7 @@ parameters:
 services:
     login_service:
       class: AppBundle\Service\LoginService
-      arguments: ['%nhm_api_url%', '%facebook_app_id%', '%facebook_client_secret%', @session, @circle.restclient, @logger]
+      arguments: ['%nhm_api_url%', '%facebook_app_id%', '%facebook_client_secret%', '%google_client_id%', '%google_client_secret%', @session, @circle.restclient, @logger]
     locale_listener:
       class: AppBundle\EventListener\LocaleListener
       arguments: ["%locale%", @logger]

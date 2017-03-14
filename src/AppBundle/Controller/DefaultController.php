@@ -33,7 +33,7 @@ class DefaultController extends Controller
     /**
      * @Route("/", name="index")
      */
-    public function indexAction(Request $request)
+    public function indexAction(Request $request): Response
     {
         return $this->render('default/index.html.twig');
     }
@@ -41,7 +41,7 @@ class DefaultController extends Controller
     /**
      * @Route("/facebook_logon_step1", name="facebook_logon_step1")
      */
-    public function facebookLogonStep1Action(Request $request)
+    public function facebookLogonStep1Action(Request $request): RedirectResponse
     {
         $url = $this->getLoginService()->facebookGetLogonUrl($request);
         return new RedirectResponse($url);
@@ -50,11 +50,39 @@ class DefaultController extends Controller
     /**
      * @Route("/facebook_logon_step2", name="facebook_logon_step2")
      */
-    public function facebookLogonStep2Action(Request $request)
+    public function facebookLogonStep2Action(Request $request): Response
     {
         $access_token = $this->getLoginService()->facebookGetAccessToken($request);
         $body = $this->getLoginService()->facebookGetUserProfile($request);
         return new Response("Facebook access token value is " . $access_token . '<br>and response is ' . \serialize($body));
+    }
+
+    /**
+     * @Route("/googleplus_logon_step1", name="googleplus_logon_step1")
+     */
+    public function googleplusLogonStep1Action(Request $request): RedirectResponse
+    {
+        $url = $this->getLoginService()->googleplusGetLogonUrl($request);
+        return new RedirectResponse($url);
+    }
+
+    /**
+     * @Route("/googleplus_logon_step2", name="googleplus_logon_step2")
+     */
+    public function googleplusLogonStep2Action(Request $request): Response
+    {
+        if ($request->query->get('error') == 'access_denied') {
+            throw new HttpException(403, 'Forbidden. Access denied.');
+        }
+        if ($request->query->get('code')) {
+            $access_token = $this->getLoginService()->googleplusGetAccessToken($request, $request->query->get('code'));
+            if ($access_token) {
+                $me = $this->getLoginService()->googleplusGetUserProfile($request);
+                return new Response("Google Plus access token value is " . $access_token['access_token'] . ', my id is '  . $me['id'] . 'and my name is ' . $me['displayName']);
+            }
+            throw new HttpException(403, 'Forbidden. No access token provided.');
+        }
+        throw new HttpException(403, 'Forbidden. No code provided.');
     }
 
 }

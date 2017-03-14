@@ -20,14 +20,18 @@ class LoginService {
     private $nhm_api_url;
     private $facebook_app_id;
     private $facebook_client_secret;
+    private $google_client_id;
+    private $google_client_secret;
     private $session;
     private $rest;
     private $logger;
 
-    function __construct($nhm_api_url, $facebook_app_id, $facebook_client_secret, $session, $rest, $logger) {
+    function __construct($nhm_api_url, $facebook_app_id, $facebook_client_secret, $google_client_id, $google_client_secret, $session, $rest, $logger) {
         $this->nhm_api_url = $nhm_api_url;
         $this->facebook_app_id = $facebook_app_id;
         $this->facebook_client_secret = $facebook_client_secret;
+        $this->google_client_id = $google_client_id;
+        $this->google_client_secret = $google_client_secret;
         $this->session = $session;
         $this->rest = $rest;
         $this->logger = $logger;
@@ -37,7 +41,7 @@ class LoginService {
         return $this->logger->debug(debug_backtrace(01, 3)[1]['function'] . " ". $msg);
     }
 
-    private function generateRandomString($length = 16) {
+    public function generateRandomString($length = 16) {
         $this->debug('start ' . serialize($request));
         $char_space = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
         $str = '';
@@ -131,6 +135,45 @@ class LoginService {
             echo 'Facebook SDK returned an error: ' . $e->getMessage();
             exit;
         }
+    }
+
+    public function googleplusGetLogonUrl($request) {
+        $this->debug('start ' . serialize($request));
+        $client = new \Google_Client();
+        $client->setClientId($this->google_client_id);
+        $client->setClientSecret($this->google_client_secret);
+        $client->addScope('https://www.googleapis.com/auth/plus.login');
+        $protocol = (substr($_SERVER['SERVER_PROTOCOL'], 0, 5) === "HTTPS"?"https://":"http://");
+        $redirect_url = $protocol . $request->getHost() . ":" . $request->getPort() . '/googleplus_logon_step2';
+        $client->setRedirectUri($redirect_url);
+        return $client->createAuthUrl();
+    }
+
+    public function googleplusGetAccessToken($request, $code) {
+        $this->debug('start ' . serialize($request));
+        $client = new \Google_Client();
+        $client->addScope('https://www.googleapis.com/auth/plus.login');
+        $client->setClientId($this->google_client_id);
+        $client->setClientSecret($this->google_client_secret);
+        $protocol = (substr($_SERVER['SERVER_PROTOCOL'], 0, 5) === "HTTPS"?"https://":"http://");
+        $redirect_url = $protocol . $request->getHost() . ":" . $request->getPort() . '/googleplus_logon_step2';
+        $client->setRedirectUri($redirect_url);
+        $client->authenticate($code);
+        $access_token = $client->getAccessToken();
+        $access_token_as_string = json_encode($access_token);
+        $this->session->set('googleplus_access_token', $access_token_as_string);
+        return $access_token;
+    }
+
+    public function googleplusGetUserProfile($request) {
+        $this->debug('start ' . serialize($request));
+        $access_token = json_decode($this->session->get('googleplus_access_token'));
+        $client = new \Google_Client();
+        $client->addScope('https://www.googleapis.com/auth/plus.me');
+        $client->setAccessToken((array)$access_token); // (object) -> (array) casting
+        $plus = new \Google_Service_Plus($client);
+        $result = $plus->people->get('me');
+        return $result;
     }
 }
 
