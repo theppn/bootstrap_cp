@@ -25,3 +25,7 @@ parameters:
 
     google_client_id: 517804749738-an4ddbsk404su5oung88v1pljofep23a.apps.googleusercontent.com
     google_client_secret: _SZ4IOQzyo5xI5eYK0BQk6EA
+    linkedin_client_id: 77g7296jvlkmch
+    linkedin_client_secret: 28xupjon1HWw3NTS
+    instagram_client_id: aaaaaaa
+    instagram_client_secret: bbbbbbb

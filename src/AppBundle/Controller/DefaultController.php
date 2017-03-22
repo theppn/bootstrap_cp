@@ -39,6 +39,23 @@ class DefaultController extends Controller
     }
 
     /**
+     * @Route("/free_logon", name="free_logon")
+     */
+    public function freeLogonAction(Request $request): Response
+    {
+        $nhm_request = $this->getLoginService()->freeLogon($request);
+        $this->debug('LOL ' . \serialize($nhm_request));
+        $nhm_request_status_code = $nhm_request->getStatusCode();
+        $nhm_request_body = json_decode($nhm_request->getContent(), true);
+        if ($nhm_request_status_code == "200" && isset($nhm_request_body['logonUrl'])) {
+            return new RedirectResponse($nhm_request_body['logonUrl']);
+        }
+        else {
+            throw new HttpException(400, 'Bad response, submission to NHM failed');
+        }
+    }
+
+    /**
      * @Route("/facebook_logon_step1", name="facebook_logon_step1")
      */
     public function facebookLogonStep1Action(Request $request): RedirectResponse
@@ -53,8 +70,21 @@ class DefaultController extends Controller
     public function facebookLogonStep2Action(Request $request): Response
     {
         $access_token = $this->getLoginService()->facebookGetAccessToken($request);
-        $body = $this->getLoginService()->facebookGetUserProfile($request);
-        return new Response("Facebook access token value is " . $access_token . '<br>and response is ' . \serialize($body));
+        if ($access_token) {
+            $body = $this->getLoginService()->facebookGetUserProfile($request);
+            $nhm_request = $this->getLoginService()->facebookSubmitToNHM($body);
+            $nhm_request_status_code = $nhm_request->getStatusCode();
+            $nhm_request_body = json_decode($nhm_request->getContent(), true);
+            if ($nhm_request_status_code == "200" && isset($nhm_request_body['logonUrl'])) {
+                return new RedirectResponse($nhm_request_body['logonUrl']);
+            }
+            else {
+                throw new HttpException(400, 'Bad response, submission to NHM failed');
+            }
+        }
+        else {
+            throw new HttpException(403, 'Forbidden. No access token provided.');
+        }
     }
 
     /**
@@ -78,11 +108,133 @@ class DefaultController extends Controller
             $access_token = $this->getLoginService()->googleplusGetAccessToken($request, $request->query->get('code'));
             if ($access_token) {
                 $me = $this->getLoginService()->googleplusGetUserProfile($request);
-                return new Response("Google Plus access token value is " . $access_token['access_token'] . ', my id is '  . $me['id'] . 'and my name is ' . $me['displayName']);
+                $email = $me[0]['value'];
+                $user_data = array(
+                    'email' => $email,
+                );
+                $nhm_request = $this->getLoginService()->googleplusSubmitToNHM($user_data);
+                $nhm_request_status_code = $nhm_request->getStatusCode();
+                $nhm_request_body = json_decode($nhm_request->getContent(), true);
+                if ($nhm_request_status_code == "200" && isset($nhm_request_body['logonUrl'])) {
+                    return new RedirectResponse($nhm_request_body['logonUrl']);
+                }
+                else {
+                    throw new HttpException(400, 'Bad response, submission to NHM failed');
+                }
             }
             throw new HttpException(403, 'Forbidden. No access token provided.');
         }
         throw new HttpException(403, 'Forbidden. No code provided.');
+    }
+
+    /**
+     * @Route("/linkedin_logon_step1", name="linkedin_logon_step1")
+     */
+    public function linkedinLogonStep1Action(Request $request): RedirectResponse
+    {
+        $url = $this->getLoginService()->linkedinGetLogonUrl($request);
+        return new RedirectResponse($url);
+    }
+
+    /**
+     * @Route("/linkedin_logon_step2", name="linkedin_logon_step2")
+     */
+    public function linkedInLogonStep2(Request $request): Response
+    {
+        $code = $request->query->get('code');
+        $state = $request->query->get('state');
+        $error = $request->query->get('error');
+        switch($error) {
+            case "user_cancelled_login":
+                throw new HttpException(401, 'User refused to login.');
+            case "user_cancelled_authorize":
+                throw new HttpException(401, 'User refused permission request.');
+            default:
+                $access_token = $this->getLoginService()->linkedinGetAccessToken($request, $code, $state);
+                if ($access_token) {
+                    $me = $this->getLoginService()->linkedinGetUserProfile($request);
+                    $me_status_code = $me->getStatusCode();
+                    $me_body = json_decode($me->getContent(), true);
+                    if ($me_status_code === '401') {
+                        throw new HttpException(403, 'Invalid or expired access token.');
+                    }
+                    else {
+                        $email = $me_body['emailAddress'];
+                        $user_data = array(
+                            'email' => $email,
+                        );
+                        $nhm_request = $this->getLoginService()->linkedinSubmitToNHM($user_data);
+                        $nhm_request_status_code = $nhm_request->getStatusCode();
+                        $nhm_request_body = json_decode($nhm_request->getContent(), true);
+                        if ($nhm_request_status_code == "200" && isset($nhm_request_body['logonUrl'])) {
+                            //return new RedirectResponse($nhm_request_body['logonUrl']);
+                            return new Response($nhm_request_body['logonUrl']);
+                        }
+                        else {
+                            throw new HttpException(400, 'Bad response, submission to NHM failed');
+                        }
+                    }
+                }
+                else {
+                    throw new HttpException(403, 'Forbidden. No access token provided.');
+                }
+        }
+    }
+
+    /**
+     * @Route("/instagram_logon_step1", name="instagram_logon_step1")
+     */
+    public function instagramLogonStep1Action(Request $request): RedirectResponse
+    {
+        $url = $this->getLoginService()->instagramGetLogonUrl($request);
+        return new RedirectResponse($url);
+    }
+
+    /**
+     * @Route("/instagram_logon_step2", name="instagram_logon_step2")
+     */
+    public function instagramLogonStep2(Request $request): Response
+    {
+        $code = $request->query->get('code');
+        $state = $request->query->get('state');
+        $error = $request->query->get('error');
+        switch($error) {
+            case "access_denied":
+                throw new HttpException(401, 'User refused permission request.');
+            default:
+                $access_token = $this->getLoginService()->instagramGetAccessToken($request, $code, $state);
+                if ($access_token) {
+                    $me = $this->getLoginService()->instagramGetUserProfile($request);
+                    $body = json_decode($me->getContent(), true);
+                    $meta = $body['meta'];
+                    $data = $body['data'];
+                    /* unused but here as a reminder it exists */
+                    //$pagination = $body['pagination'];
+                    if ($meta['code'] === 200) {
+                        $username = $data['username'];
+                        $user_data = array(
+                            'username' => $username,
+                        );
+                        $nhm_request = $this->getLoginService()->instagramSubmitToNHM($user_data);
+                        $nhm_request_status_code = $nhm_request->getStatusCode();
+                        $nhm_request_body = json_decode($nhm_request->getContent(), true);
+                        if ($nhm_request_status_code == "200" && isset($nhm_request_body['logonUrl'])) {
+                            return new RedirectResponse($nhm_request_body['logonUrl']);
+                        }
+                        else {
+                            throw new HttpException(400, 'Bad response, submission to NHM failed');
+                        }
+                    }
+                    else {
+                        // trust Instagram API with the right status
+                        $this->debug('Instagram -> Code ' . $meta['code'] . ', ' . $meta['error_type'] . ": " . $meta['error_message']);
+                        throw new HttpException($meta['code'], $meta['error_type']);
+                    }
+                }
+                else {
+                    throw new HttpException(403, 'Forbidden. No access token provided.');
+                }
+        }
     }
 
 }
