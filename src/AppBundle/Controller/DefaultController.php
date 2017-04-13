@@ -44,7 +44,6 @@ class DefaultController extends Controller
     public function freeLogonAction(Request $request): Response
     {
         $nhm_request = $this->getLoginService()->freeLogon($request);
-        $this->debug('LOL ' . \serialize($nhm_request));
         $nhm_request_status_code = $nhm_request->getStatusCode();
         $nhm_request_body = json_decode($nhm_request->getContent(), true);
         if ($nhm_request_status_code == "200" && isset($nhm_request_body['logonUrl'])) {
@@ -52,6 +51,38 @@ class DefaultController extends Controller
         }
         else {
             throw new HttpException(400, 'Bad response, submission to NHM failed');
+        }
+    }
+
+    /**
+     * @Route("/twitter_logon_step1", name="twitter_logon_step1")!
+     */
+    public function twitterLogonStep1Action(Request $request): RedirectResponse
+    {
+        $url = $this->getLoginService()->twitterGetLogonUrl($request);
+        return new RedirectResponse($url);
+    }
+
+    /**
+     * @Route("/twitter_logon_step2", name="twitter_logon_step2")
+     */
+    public function twitterLogonStep2Action(Request $request): Response
+    {
+        $access_token = $this->getLoginService()->twitterGetAccessToken($request);
+        if ($access_token) {
+            $body = $this->getLoginService()->twitterGetUserProfile($request);
+            $nhm_request = $this->getLoginService()->twitterSubmitToNHM($body);
+            $nhm_request_status_code = $nhm_request->getStatusCode();
+            $nhm_request_body = json_decode($nhm_request->getContent(), true);
+            if ($nhm_request_status_code == "200" && isset($nhm_request_body['logonUrl'])) {
+                return new RedirectResponse($nhm_request_body['logonUrl']);
+            }
+            else {
+                throw new HttpException(400, 'Bad response, submission to NHM failed');
+            }
+        }
+        else {
+            throw new HttpException(403, 'Forbidden. No access token provided.');
         }
     }
 
@@ -167,8 +198,8 @@ class DefaultController extends Controller
                         $nhm_request_status_code = $nhm_request->getStatusCode();
                         $nhm_request_body = json_decode($nhm_request->getContent(), true);
                         if ($nhm_request_status_code == "200" && isset($nhm_request_body['logonUrl'])) {
-                            //return new RedirectResponse($nhm_request_body['logonUrl']);
-                            return new Response($nhm_request_body['logonUrl']);
+                            return new RedirectResponse($nhm_request_body['logonUrl']);
+                            //return new Response($nhm_request_body['logonUrl']);
                         }
                         else {
                             throw new HttpException(400, 'Bad response, submission to NHM failed');

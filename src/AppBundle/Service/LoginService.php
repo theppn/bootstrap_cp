@@ -11,6 +11,7 @@ namespace AppBundle\Service;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\HttpException;
+use Abraham\TwitterOAuth\TwitterOAuth;
 use Facebook\Facebook;
 use Facebook\FacebookResponse;
 use Facebook\Exceptions\FacebookResponseException;
@@ -18,6 +19,8 @@ use Facebook\Exceptions\FacebookSDKException;
 
 class LoginService {
     private $nhm_api_url;
+    private $twitter_consumer_key;
+    private $twitter_consumer_secret;
     private $facebook_app_id;
     private $facebook_client_secret;
     private $google_client_id;
@@ -30,8 +33,10 @@ class LoginService {
     private $rest;
     private $logger;
 
-    function __construct($nhm_api_url, $facebook_app_id, $facebook_client_secret, $google_client_id, $google_client_secret, $linkedin_client_id, $linkedin_client_secret, $instagram_client_id, $instagram_client_secret, $session, $rest, $logger) {
+    function __construct($nhm_api_url, $twitter_consumer_key, $twitter_consumer_secret, $facebook_app_id, $facebook_client_secret, $google_client_id, $google_client_secret, $linkedin_client_id, $linkedin_client_secret, $instagram_client_id, $instagram_client_secret, $session, $rest, $logger) {
         $this->nhm_api_url = $nhm_api_url;
+        $this->twitter_consumer_key = $twitter_consumer_key;
+        $this->twitter_consumer_secret = $twitter_consumer_secret;
         $this->facebook_app_id = $facebook_app_id;
         $this->facebook_client_secret = $facebook_client_secret;
         $this->google_client_id = $google_client_id;
@@ -78,15 +83,83 @@ class LoginService {
 
     public function freeLogon($request) {
         $this->debug('start ' . serialize($request));
-        $url = $this->nhm_api_url . 'free-logon';
+        $url = 'free-logon';
         $result = $this->api_call('POST', $url);
+        return $result;
+    }
+
+    public function twitterGetLogonUrl($request) {
+        $this->debug('start ' . serialize($request));
+        try {
+            $protocol = $request->getScheme() . '://';
+            $redirect_url = $protocol . $request->getHost() . ":" . $request->getPort() . '/twitter_logon_step2';
+            $connection = new TwitterOAuth($this->twitter_consumer_key, $this->twitter_consumer_secret);
+            $request_token = $connection->oauth('oauth/request_token', array('oauth_callback' => $redirect_url));
+            $url = $connection->url('oauth/authorize', array('oauth_token' => $request_token['oauth_token']));
+            return $url;
+        }
+        catch(\Exception $e) {
+            $this->debug("ERROR: cannot initiliaze TwitterOAuth, stuck at step 'request token'. Details: " . $e->getMessage());
+            throw new HttpException(503, 'Service unavailable. Twitter may have an issue.');
+        }
+    }
+
+    public function twitterGetAccessToken($request) {
+        $this->debug('start ' . serialize($request));
+        try {
+            $request_token = [];
+            $request_token['oauth_token'] = $_GET['oauth_token'];
+            $request_token['oauth_verifier'] = $_GET['oauth_verifier'];
+            // using request token to get access token
+            $connection = new TwitterOAuth($this->twitter_consumer_key, $this->twitter_consumer_secret, $request_token['oauth_token'], $request_token['oauth_verifier']);
+            $access_token = $connection->oauth("oauth/access_token", ["oauth_verifier" => $_GET['oauth_verifier']]);
+            $this->session->set('twitter_access_token', json_encode($access_token));
+            return $access_token;
+        }
+        catch(\Exception $e) {
+            $this->debug("ERROR: cannot initiliaze TwitterOAuth, stuck at step 'access token'. Details: " . $e->getMessage());
+            throw new HttpException(503, 'Service unavailable. Twitter may have an issue.');
+        }
+    }
+
+    public function twitterGetUserProfile($request) {
+        $this->debug('start ' . serialize($request));
+        try {
+            $access_token = json_decode($this->session->get('twitter_access_token'), true);
+            $connection = new TwitterOAuth($this->twitter_consumer_key, $this->twitter_consumer_secret, $access_token['oauth_token'], $access_token['oauth_token_secret']);
+            // lazy casting stdClass into JSON string then array
+            $user_data = json_decode(json_encode($connection->get("account/verify_credentials", ['include_entities' => 'false',  'skip_status' => 'true',  'include_email' => 'true'])), true);
+            return $user_data;
+        }
+        catch(\Exception $e) {
+            $this->debug("ERROR: cannot initiliaze TwitterOAuth, stuck at step 'verify credentials'. Details: " . $e->getMessage());
+            throw new HttpException(503, 'Service unavailable. Twitter may have an issue.');
+        }
+    }
+
+    public function twitterSubmitToNHM($user_data) {
+        $nhm_token = $this->session->get('token');
+        if (empty($nhm_token)) {
+            throw new HttpException(401, 'No token was provided by NHM.');
+        }
+        $result = $this->api_call('POST', 'twitter-logon', array(
+            'name' => $user_data['name'],
+            'screen_name' => $user_data['screen_name'],
+            'created_at' => $user_data['created_at'],
+            'email' => $user_data['email'],
+            'location' => $user_data['location'],
+            'lang' => $user_data['lang']
+        ), array(
+            'authorization: ' . $this->session->get('token')
+        ));
+        $this->debug(\serialize($result));
         return $result;
     }
 
 
     public function facebookGetLogonUrl($request) {
         $this->debug('start ' . serialize($request));
-        $protocol = (substr($_SERVER['SERVER_PROTOCOL'], 0, 5) === "HTTPS"?"https://":"http://");
+        $protocol = $request->getScheme() . '://';
         $redirect_url = $protocol . $request->getHost() . ":" . $request->getPort() . '/facebook_logon_step2';
         $fb = new Facebook([
             'app_id' => $this->facebook_app_id,
@@ -168,7 +241,7 @@ class LoginService {
         $client->setClientId($this->google_client_id);
         $client->setClientSecret($this->google_client_secret);
         $client->addScope('https://www.googleapis.com/auth/plus.profile.emails.read');
-        $protocol = (substr($_SERVER['SERVER_PROTOCOL'], 0, 5) === "HTTPS"?"https://":"http://");
+        $protocol = $request->getScheme() . '://';
         $redirect_url = $protocol . $request->getHost() . ":" . $request->getPort() . '/googleplus_logon_step2';
         $client->setRedirectUri($redirect_url);
         return $client->createAuthUrl();
@@ -183,7 +256,7 @@ class LoginService {
         $client->addScope('https://www.googleapis.com/auth/plus.profile.emails.read');
         $client->setClientId($this->google_client_id);
         $client->setClientSecret($this->google_client_secret);
-        $protocol = (substr($_SERVER['SERVER_PROTOCOL'], 0, 5) === "HTTPS"?"https://":"http://");
+        $protocol = $request->getScheme() . '://';
         $redirect_url = $protocol . $request->getHost() . ":" . $request->getPort() . '/googleplus_logon_step2';
         $client->setRedirectUri($redirect_url);
         $client->authenticate($code);
@@ -222,7 +295,7 @@ class LoginService {
         $this->debug('start ' . serialize($request));
         $state = $this->generateRandomString();
         $this->session->set('linkedin_random_state', $state);
-        $protocol = (substr($_SERVER['SERVER_PROTOCOL'], 0, 5) === "HTTPS"?"https://":"http://");
+        $protocol = $request->getScheme() . '://';
         $redirect_url = urlencode($protocol . $request->getHost() . ":" . $request->getPort() . '/linkedin_logon_step2');
         $result = "https://www.linkedin.com/oauth/v2/authorization?response_type=code&client_id=" . $this->linkedin_client_id . "&redirect_uri=" . $redirect_url . "&state=" . $state . "&scope=r_emailaddress";
         return $result;
@@ -240,7 +313,7 @@ class LoginService {
         if ($state != $current_state) {
             throw new HttpException(401, 'State is different. Forgery detected.');
         }
-        $protocol = (substr($_SERVER['SERVER_PROTOCOL'], 0, 5) === "HTTPS"?"https://":"http://");
+        $protocol = $request->getScheme() . '://';
         $url = 'https://www.linkedin.com/oauth/v2/accessToken';
         $redirect_url = $protocol . $request->getHost() . ":" . $request->getPort() . '/linkedin_logon_step2';
         /* /!\ Contrary to what the LinkedIn doc reads, POST parameters are not supported, provide them as url query parameters /!\ */
@@ -291,7 +364,7 @@ class LoginService {
         $this->debug('start ' . serialize($request));
         $state = $this->generateRandomString();
         $this->session->set('instagram_random_state', $state);
-        $protocol = (substr($_SERVER['SERVER_PROTOCOL'], 0, 5) === "HTTPS"?"https://":"http://");
+        $protocol = $request->getScheme() . '://';
         $redirect_url = urlencode($protocol . $request->getHost() . ":" . $request->getPort() . '/instagram_logon_step2');
         $result = "https://api.instagram.com/oauth/authorize/?client_id=" . $this->instagram_client_id . "&redirect_uri=" . $redirect_url . "&response_type=code&scope=public_content&state=" . $state;
         return $result;
@@ -309,7 +382,7 @@ class LoginService {
         if ($state != $current_state) {
             throw new HttpException(401, 'State is different. Forgery detected.');
         }
-        $protocol = (substr($_SERVER['SERVER_PROTOCOL'], 0, 5) === "HTTPS"?"https://":"http://");
+        $protocol = $request->getScheme() . '://';
         $url = 'https://api.instagram.com/oauth/access_token';
         $redirect_url = $protocol . $request->getHost() . ":" . $request->getPort() . '/instagram_logon_step2';
         /*$data = '?client_id=' . $this->instagram_client_id . '&client_secret=' . $this->instagram_client_secret . '&grant_type=authorization_code&redirect_uri=' . $redirect_url . '&code=' . $code;

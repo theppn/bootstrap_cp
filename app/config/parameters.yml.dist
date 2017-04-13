@@ -18,14 +18,14 @@ parameters:
     # A secret key that's used to generate certain security-related tokens
     secret: ThisTokenIsNotSoSecretChangeIt
 
-    nhm_api_url: http://192.168.11.224:8080/api/
-
+    nhm_api_url: https://nhm-dev.nomosphere.fr:8080/api/
+    twitter_consumer_key: WmLclwG84WpypF1QzQ4RBO0RL
+    twitter_consumer_secret: rMOLObQNwXK4xgqpgBBl8NYigrLhtLte3XfkphgsdCJF2Ti89w
     facebook_app_id: 1837790199808356
     facebook_client_secret: 2837d08acce8c08afffe8c2281cb339f
-
-    google_client_id: 517804749738-an4ddbsk404su5oung88v1pljofep23a.apps.googleusercontent.com
-    google_client_secret: _SZ4IOQzyo5xI5eYK0BQk6EA
+    google_client_id: 479652676011-81qgnj7dj7bvms0amu245q0qt6v6k6fr.apps.googleusercontent.com
+    google_client_secret: 1vgQqBhNUplwps12Y6PIN3ny
     linkedin_client_id: 77g7296jvlkmch
     linkedin_client_secret: 28xupjon1HWw3NTS
-    instagram_client_id: aaaaaaa
-    instagram_client_secret: bbbbbbb
+    instagram_client_id: b91b81cc7c8746a5b3e082578e8df334
+    instagram_client_secret: 457a1918b7804e9f868d40e6e351b2e1

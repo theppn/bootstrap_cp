@@ -13,6 +13,7 @@
     },
     "require": {
         "php": ">=5.3.9",
+        "abraham/twitteroauth": "^0.7.2",
         "ci/restclientbundle": "^2.0",
         "doctrine/doctrine-bundle": "~1.4",
         "doctrine/orm": "^2.4.8",
