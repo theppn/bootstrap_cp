@@ -142,14 +142,22 @@ class LoginService {
         if (empty($nhm_token)) {
             throw new HttpException(401, 'No token was provided by NHM.');
         }
-        $result = $this->api_call('POST', 'twitter-logon', array(
-            'name' => $user_data['name'],
-            'screen_name' => $user_data['screen_name'],
-            'created_at' => $user_data['created_at'],
-            'email' => $user_data['email'],
-            'location' => $user_data['location'],
-            'lang' => $user_data['lang']
-        ), array(
+        $wanted_fields = array(
+            'twitterCreatedAt' => 'created_at',
+            'lang' => 'lang',
+            'location' => 'location',
+            'name' => 'name',
+            'screenName' => 'screen_name',
+            'email' => 'email'
+        );
+        $data = [];
+        foreach ($wanted_fields as $key => $value) {
+            $data[$key] = '';
+            if (isset($user_data[$value])) {
+                $data[$key] = $user_data[$value];
+            }
+        }
+        $result = $this->api_call('POST', 'twitter-logon', $data, array(
             'authorization: ' . $this->session->get('token')
         ));
         $this->debug(\serialize($result));
@@ -210,7 +218,7 @@ class LoginService {
         ]);
         try {
             // Returns a `Facebook\FacebookResponse` object
-            $result = $fb->get('/me?fields=email', $this->session->get('facebook_access_token'));
+            $result = $fb->get('/me?fields=last_name,first_name,age_range,birthday,email,gender,locale', $this->session->get('facebook_access_token'));
             return $result->getDecodedBody();
         } catch(FacebookResponseException $e) {
             echo 'Graph returned an error: ' . $e->getMessage();
@@ -226,9 +234,36 @@ class LoginService {
         if (empty($nhm_token)) {
             throw new HttpException(401, 'No token was provided by NHM.');
         }
-        $result = $this->api_call('POST', 'facebook-logon', array(
-            'email' => $user_data['email'] //only email for now
-        ), array(
+        $wanted_fields = array(
+            'lastName' => 'last_name',
+            'firstName' => 'first_name',
+            'ageRange' => 'age_range',
+            'birthday' => 'birthday',
+            'email' => 'email',
+            'gender' => 'gender',
+            'locale' => 'locale'
+        );
+        $data = [];
+        foreach ($wanted_fields as $key => $value) {
+            $data[$key] = '';
+            if (isset($user_data[$value])) {
+                if($value === 'age_range') {
+                    $minBoundary = '0';
+                    $maxBoundary = '?';
+                    if (isset($user_data[$value]['min'])) {
+                        $minBoundary = $user_data[$value]['min'];
+                    }
+                    if (isset($user_data[$value]['max'])) {
+                        $maxBoundary = $user_data[$value]['max'];
+                    }
+                    $data[$key] = $minBoundary . '-' . $maxBoundary;
+                }
+                else {
+                    $data[$key] = $user_data[$value];
+                }
+            }
+        }
+        $result = $this->api_call('POST', 'facebook-logon', $data, array(
             'authorization: ' . $this->session->get('token')
         ));
         $this->debug(\serialize($result));
