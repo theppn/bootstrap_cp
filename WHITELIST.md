@@ -14,6 +14,7 @@ https://www.facebook.com/v2.5/dialog/oauth
 
 - facebook.com
 - www.facebook.com
+- fbcdn.net
 
 
 Google+
