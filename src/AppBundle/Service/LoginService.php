@@ -332,7 +332,7 @@ class LoginService {
         $this->session->set('linkedin_random_state', $state);
         $protocol = $request->getScheme() . '://';
         $redirect_url = urlencode($protocol . $request->getHost() . ":" . $request->getPort() . '/linkedin_logon_step2');
-        $result = "https://www.linkedin.com/oauth/v2/authorization?response_type=code&client_id=" . $this->linkedin_client_id . "&redirect_uri=" . $redirect_url . "&state=" . $state . "&scope=r_emailaddress";
+        $result = "https://www.linkedin.com/oauth/v2/authorization?response_type=code&client_id=" . $this->linkedin_client_id . "&redirect_uri=" . $redirect_url . "&state=" . $state . "&scope=r_basicprofile%20r_emailaddress";
         return $result;
     }
 
@@ -374,7 +374,7 @@ class LoginService {
         $this->debug('start ' . serialize($request));
         $access_token = $this->session->get('linkedin_access_token');
         /* /!\ Contrary to what the LinkedIn doc reads, header parameters are not supported, provide them as url query parameters /!\ */
-        $url = 'https://api.linkedin.com/v1/people/~:(email-address)?format=json&oauth2_access_token=' . $access_token;
+        $url = 'https://api.linkedin.com/v1/people/~:(id,first-name,last-name,public-profile-url,email-address)?format=json&oauth2_access_token=' . $access_token;
         //$options = array(CURLOPT_HTTPHEADER => array('Authorization: Bearer '. $access_token, 'x-li-format: json'));
         //$result = $this->rest->get($url, $options);
         $result = $this->rest->get($url);
@@ -382,12 +382,36 @@ class LoginService {
     }
 
     public function linkedinSubmitToNHM($user_data) {
+        $this->debug('start ' . serialize($user_data));
         $nhm_token = $this->session->get('token');
         if (empty($nhm_token)) {
             throw new HttpException(401, 'No token was provided by NHM.');
         }
+        $email = "";
+        if (isset($user_data['emailAddress'])) {
+            $email = $user_data['emailAddress'];
+        }
+        $firstName = "";
+        if (isset($user_data['firstName'])) {
+            $firstName = $user_data['firstName'];
+        }
+        $lastName = "";
+        if (isset($user_data['lastName'])) {
+            $lastName = $user_data['lastName'];
+        }
+        $id = "";
+        if (isset($user_data['publicProfileUrl'])) {
+            $target = explode('/', $user_data['publicProfileUrl']);
+            $id = $target[count($target) - 1];
+            if (!$id) { // just in case, url ends by "/"
+                $id = $target[count($target) - 2];
+            }
+        }
         $result = $this->api_call('POST', 'linkedin-logon', array(
-            'email' => $user_data['email'] //only email for now
+            'email' => $email,
+            'id' => $id,
+            'firstName' => $firstName,
+            'lastName' => $lastName
         ), array(
             'authorization: ' . $this->session->get('token')
         ));
@@ -453,12 +477,18 @@ class LoginService {
     }
 
     public function instagramSubmitToNHM($user_data) {
+        $this->debug('start ' . serialize($user_data));
         $nhm_token = $this->session->get('token');
         if (empty($nhm_token)) {
             throw new HttpException(401, 'No token was provided by NHM.');
         }
+        $fullName = "";
+        if (isset($user_data['full_name'])) {
+            $fullName = $user_data['full_name'];
+        }
         $result = $this->api_call('POST', 'instagram-logon', array(
-            'username' => $user_data['username'] //only username for now
+            'username' => $user_data['username'],
+            'fullName' => $fullName
         ), array(
             'authorization: ' . $this->session->get('token')
         ));

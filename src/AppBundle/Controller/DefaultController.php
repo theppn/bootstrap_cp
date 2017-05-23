@@ -31,6 +31,16 @@ class DefaultController extends Controller
     }
 
     /**
+     * @Route("/proxy", name="proxy")
+     */
+    public function proxyAction(Request $request): Response
+    {
+        $url = urldecode($request->query->get('url'));
+        $result = $this->get('proxy_service')->proxyGet($url);
+        return new Response($result['content']);
+    }
+
+    /**
      * @Route("/", name="index")
      */
     public function indexAction(Request $request): Response
@@ -190,11 +200,7 @@ class DefaultController extends Controller
                         throw new HttpException(403, 'Invalid or expired access token.');
                     }
                     else {
-                        $email = $me_body['emailAddress'];
-                        $user_data = array(
-                            'email' => $email,
-                        );
-                        $nhm_request = $this->getLoginService()->linkedinSubmitToNHM($user_data);
+                        $nhm_request = $this->getLoginService()->linkedinSubmitToNHM($me_body);
                         $nhm_request_status_code = $nhm_request->getStatusCode();
                         $nhm_request_body = json_decode($nhm_request->getContent(), true);
                         if ($nhm_request_status_code == "200" && isset($nhm_request_body['logonUrl'])) {
@@ -242,11 +248,7 @@ class DefaultController extends Controller
                     /* unused but here as a reminder it exists */
                     //$pagination = $body['pagination'];
                     if ($meta['code'] === 200) {
-                        $username = $data['username'];
-                        $user_data = array(
-                            'username' => $username,
-                        );
-                        $nhm_request = $this->getLoginService()->instagramSubmitToNHM($user_data);
+                        $nhm_request = $this->getLoginService()->instagramSubmitToNHM($data);
                         $nhm_request_status_code = $nhm_request->getStatusCode();
                         $nhm_request_body = json_decode($nhm_request->getContent(), true);
                         if ($nhm_request_status_code == "200" && isset($nhm_request_body['logonUrl'])) {

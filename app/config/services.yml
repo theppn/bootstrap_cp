@@ -7,6 +7,9 @@ services:
     login_service:
       class: AppBundle\Service\LoginService
       arguments: ['%nhm_api_url%', '%twitter_consumer_key%', '%twitter_consumer_secret%', '%facebook_app_id%', '%facebook_client_secret%', '%google_client_id%', '%google_client_secret%', '%linkedin_client_id%', '%linkedin_client_secret%', '%instagram_client_id%', '%instagram_client_secret%', @session, @circle.restclient, @logger]
+    proxy_service:
+      class: AppBundle\Service\ProxyService
+      arguments: [@session, @circle.restclient, @logger]
     locale_listener:
       class: AppBundle\EventListener\LocaleListener
       arguments: ["%locale%", @logger]
