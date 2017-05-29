@@ -399,17 +399,17 @@ class LoginService {
         if (isset($user_data['lastName'])) {
             $lastName = $user_data['lastName'];
         }
-        $id = "";
+        $username = "";
         if (isset($user_data['publicProfileUrl'])) {
             $target = explode('/', $user_data['publicProfileUrl']);
-            $id = $target[count($target) - 1];
-            if (!$id) { // just in case, url ends by "/"
-                $id = $target[count($target) - 2];
+            $username = $target[count($target) - 1];
+            if (!$username) { // just in case, url ends by "/"
+                $username = "";
             }
         }
         $result = $this->api_call('POST', 'linkedin-logon', array(
             'email' => $email,
-            'id' => $id,
+            'username' => $username,
             'firstName' => $firstName,
             'lastName' => $lastName
         ), array(
