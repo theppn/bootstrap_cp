@@ -196,7 +196,7 @@ class DefaultController extends Controller
                     $me = $this->getLoginService()->linkedinGetUserProfile($request);
                     $me_status_code = $me->getStatusCode();
                     $me_body = json_decode($me->getContent(), true);
-                    if ($me_status_code === '401') {
+                    if ($me_status_code == 401) {
                         throw new HttpException(403, 'Invalid or expired access token.');
                     }
                     else {
@@ -247,7 +247,7 @@ class DefaultController extends Controller
                     $data = $body['data'];
                     /* unused but here as a reminder it exists */
                     //$pagination = $body['pagination'];
-                    if ($meta['code'] === 200) {
+                    if ($meta['code'] == 200) {
                         $nhm_request = $this->getLoginService()->instagramSubmitToNHM($data);
                         $nhm_request_status_code = $nhm_request->getStatusCode();
                         $nhm_request_body = json_decode($nhm_request->getContent(), true);
