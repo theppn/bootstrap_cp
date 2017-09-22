@@ -1,0 +1,52 @@
+{% extends 'base.html.twig' %}
+
+{% block body %}
+    <div id="wrapper">
+        <div id="container">
+            <div id="welcome">
+                <div id="my_map" style="width:700px;height:700px"></div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block stylesheets %}{% endblock %}
+{% block javascripts %}
+    <!-- BELOW: testing geolocation and google map api -->
+    <script type="text/javascript">
+        var map;
+        function myMap() {
+            if ("geolocation" in navigator) {
+                console.log('geolocation is available');
+                var do_something = function (lat, long) {
+                    console.log('reported geolocation coordinates are ' + lat + ' lat and ' + long + ' long');
+                    var mapCanvas = document.getElementById("my_map");
+                    var mapOptions = {
+                        center: new google.maps.LatLng(lat, long),
+                        zoom:18,
+                        mapTypeId:google.maps.MapTypeId.HYBRID
+                    };
+                    map = new google.maps.Map(mapCanvas,mapOptions);
+                };
+                var geo_options = {
+                    enableHighAccuracy: true,
+                    maximumAge        : 30000,
+                    timeout           : 30000
+                };
+                var watchID;
+                navigator.geolocation.getCurrentPosition(function(position) {
+                    do_something(position.coords.latitude, position.coords.longitude);
+                    navigator.geolocation.watchPosition(function(position) {
+                        console.log('updated reported geolocation coordinates are ' + position.coords.latitude + ' lat and ' + position.coords.longitude + ' long');
+                        map.setCenter('(' + position.coords.latitude + ',' + position.coords.longitude + ')');
+                    });
+                }, function() {
+                    console.log('no position available');
+                }, geo_options);
+            } else {
+                console.log('geolocation IS NOT available');
+            }
+        }
+    </script>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyChjVWGO2hL0wI4rT1Snof_5o79T8jZVZ4&callback=myMap"></script>
+{% endblock %}

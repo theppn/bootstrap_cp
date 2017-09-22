@@ -64,3 +64,9 @@ swiftmailer:
     username: '%mailer_user%'
     password: '%mailer_password%'
     spool: { type: memory }
+
+# SendInBlue Configuration
+sendin_blue_api:
+    api_key: "%sendin_blue_api_key%"
+    # Our library supports a timeout value, which is an optional parameter, default is 30,000 MS ( 30 secs )
+    timeout: "%sendin_blue_api_timeout%"

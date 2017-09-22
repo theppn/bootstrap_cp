@@ -1,0 +1,87 @@
+{% extends 'base.html.twig' %}
+
+{% block body %}
+    <div id="wrapper">
+        <div id="container">
+            <div id="welcome">
+                <p> <div id="notification_status"></div></p>
+                <p> <input type="text" id="notification_title" value="Computer says: "></p>
+                <p> <input type="textarea" id="notification_msg" value="Hohoho! Now I have a machine gun!"></p>
+                <p> <input type="text" id="notification_icon" value="http://images5.fanpop.com/image/photos/24800000/John-McClane-john-mcclane-24823024-200-200.jpg"></p>
+                <p> <input type="text" id="notification_timeout" value="10"></p>
+                <p> <input type="button" id="notification_button" value="Yippee ki-yay"></p>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block stylesheets %}
+{% endblock %}
+{% block javascripts %}
+    <!-- BELOW: testing notification api -->
+    <script type="text/javascript">
+        if (Notification) {
+            var notificationCheckPermission = function() {
+                return Notification.permission;
+            }
+
+            var notificationAskPermission = function() {
+                return Notification.requestPermission().then(function(result) {
+                    console.log(result);
+                });
+            }
+
+            var notificationMake = function(title, msg, icon, timeout) {
+                console.log("Making a new Notification");
+                var options = {};
+                if (typeof msg === "string") {
+                    options['body'] = msg;
+                }
+                if (typeof icon === "string") {
+                    options['icon'] = icon;
+                }
+                var notif = new Notification(title, options);
+                if (typeof timeout === "number") {
+                    setTimeout(notif.close.bind(notif), timeout*1000);
+                }
+            }
+
+            var notificationUserMake = function() {
+                var title = document.getElementById('notification_title').value;
+                var msg = document.getElementById('notification_msg').value;
+                var icon = document.getElementById('notification_icon').value;
+                var timeout = document.getElementById('notification_timeout').value;
+                notificationMake(title, msg, icon, timeout);
+            }
+
+            var notificationRun = function() {
+                var permission = notificationCheckPermission();
+                switch (permission) {
+                    case "denied":
+                        console.log("Notifications blocked by user");
+                        document.getElementById('notification_status').innerHTML = "User denied notifications permission.";
+                        return -1;
+                        break;
+                    case "granted":
+                        console.log("Notification allowed by user");
+                        document.getElementById('notification_status').innerHTML = "User granted notifications permission.";
+                        notificationUserMake();
+                        document.getElementById('notification_button').addEventListener('click', function() {
+                            notificationUserMake();
+                        });
+                        return 1;
+                        break;
+                    case "default":
+                    default:
+                        console.log("Notification permission unknown, ask user");
+                        document.getElementById('notification_status').innerHTML = "Notification permission unknown, ask user";
+                        notificationAskPermission().then(function() {
+                            notificationRun();
+                        });
+                        return 0;
+                }
+            }
+            notificationRun();
+        }
+    </script>
+{% endblock %}

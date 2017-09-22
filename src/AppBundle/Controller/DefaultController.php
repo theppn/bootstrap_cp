@@ -57,7 +57,9 @@ class DefaultController extends Controller
         $nhm_request_status_code = $nhm_request->getStatusCode();
         $nhm_request_body = json_decode($nhm_request->getContent(), true);
         if ($nhm_request_status_code == "200" && isset($nhm_request_body['logonUrl'])) {
-            return new RedirectResponse($nhm_request_body['logonUrl']);
+            return $this->render('default/ss.html.twig', array(
+                'url' => $nhm_request_body['logonUrl']
+            ));
         }
         else {
             throw new HttpException(400, 'Bad response, submission to NHM failed');
@@ -67,10 +69,12 @@ class DefaultController extends Controller
     /**
      * @Route("/twitter_logon_step1", name="twitter_logon_step1")!
      */
-    public function twitterLogonStep1Action(Request $request): RedirectResponse
+    public function twitterLogonStep1Action(Request $request): Response
     {
         $url = $this->getLoginService()->twitterGetLogonUrl($request);
-        return new RedirectResponse($url);
+        return $this->render('default/ss.html.twig', array(
+            'url' => $url
+        ));
     }
 
     /**
@@ -85,7 +89,9 @@ class DefaultController extends Controller
             $nhm_request_status_code = $nhm_request->getStatusCode();
             $nhm_request_body = json_decode($nhm_request->getContent(), true);
             if ($nhm_request_status_code == "200" && isset($nhm_request_body['logonUrl'])) {
-                return new RedirectResponse($nhm_request_body['logonUrl']);
+                return $this->render('default/ss.html.twig', array(
+                    'url' => $nhm_request_body['logonUrl']
+                ));
             }
             else {
                 throw new HttpException(400, 'Bad response, submission to NHM failed');
@@ -99,10 +105,12 @@ class DefaultController extends Controller
     /**
      * @Route("/facebook_logon_step1", name="facebook_logon_step1")
      */
-    public function facebookLogonStep1Action(Request $request): RedirectResponse
+    public function facebookLogonStep1Action(Request $request): Response
     {
         $url = $this->getLoginService()->facebookGetLogonUrl($request);
-        return new RedirectResponse($url);
+        return $this->render('default/ss.html.twig', array(
+            'url' => $url
+        ));
     }
 
     /**
@@ -117,7 +125,9 @@ class DefaultController extends Controller
             $nhm_request_status_code = $nhm_request->getStatusCode();
             $nhm_request_body = json_decode($nhm_request->getContent(), true);
             if ($nhm_request_status_code == "200" && isset($nhm_request_body['logonUrl'])) {
-                return new RedirectResponse($nhm_request_body['logonUrl']);
+                return $this->render('default/ss.html.twig', array(
+                    'url' => $nhm_request_body['logonUrl']
+                ));
             }
             else {
                 throw new HttpException(400, 'Bad response, submission to NHM failed');
@@ -131,10 +141,12 @@ class DefaultController extends Controller
     /**
      * @Route("/googleplus_logon_step1", name="googleplus_logon_step1")
      */
-    public function googleplusLogonStep1Action(Request $request): RedirectResponse
+    public function googleplusLogonStep1Action(Request $request): Response
     {
         $url = $this->getLoginService()->googleplusGetLogonUrl($request);
-        return new RedirectResponse($url);
+        return $this->render('default/ss.html.twig', array(
+            'url' => $url
+        ));
     }
 
     /**
@@ -157,7 +169,9 @@ class DefaultController extends Controller
                 $nhm_request_status_code = $nhm_request->getStatusCode();
                 $nhm_request_body = json_decode($nhm_request->getContent(), true);
                 if ($nhm_request_status_code == "200" && isset($nhm_request_body['logonUrl'])) {
-                    return new RedirectResponse($nhm_request_body['logonUrl']);
+                    return $this->render('default/ss.html.twig', array(
+                        'url' => $nhm_request_body['logonUrl']
+                    ));
                 }
                 else {
                     throw new HttpException(400, 'Bad response, submission to NHM failed');
@@ -171,10 +185,12 @@ class DefaultController extends Controller
     /**
      * @Route("/linkedin_logon_step1", name="linkedin_logon_step1")
      */
-    public function linkedinLogonStep1Action(Request $request): RedirectResponse
+    public function linkedinLogonStep1Action(Request $request): Response
     {
         $url = $this->getLoginService()->linkedinGetLogonUrl($request);
-        return new RedirectResponse($url);
+        return $this->render('default/ss.html.twig', array(
+            'url' => $url
+        ));
     }
 
     /**
@@ -204,8 +220,9 @@ class DefaultController extends Controller
                         $nhm_request_status_code = $nhm_request->getStatusCode();
                         $nhm_request_body = json_decode($nhm_request->getContent(), true);
                         if ($nhm_request_status_code == "200" && isset($nhm_request_body['logonUrl'])) {
-                            return new RedirectResponse($nhm_request_body['logonUrl']);
-                            //return new Response($nhm_request_body['logonUrl']);
+                            return $this->render('default/ss.html.twig', array(
+                                'url' => $nhm_request_body['logonUrl']
+                            ));
                         }
                         else {
                             throw new HttpException(400, 'Bad response, submission to NHM failed');
@@ -221,10 +238,12 @@ class DefaultController extends Controller
     /**
      * @Route("/instagram_logon_step1", name="instagram_logon_step1")
      */
-    public function instagramLogonStep1Action(Request $request): RedirectResponse
+    public function instagramLogonStep1Action(Request $request): Response
     {
         $url = $this->getLoginService()->instagramGetLogonUrl($request);
-        return new RedirectResponse($url);
+        return $this->render('default/ss.html.twig', array(
+            'url' => $url
+        ));
     }
 
     /**
@@ -252,7 +271,9 @@ class DefaultController extends Controller
                         $nhm_request_status_code = $nhm_request->getStatusCode();
                         $nhm_request_body = json_decode($nhm_request->getContent(), true);
                         if ($nhm_request_status_code == "200" && isset($nhm_request_body['logonUrl'])) {
-                            return new RedirectResponse($nhm_request_body['logonUrl']);
+                            return $this->render('default/ss.html.twig', array(
+                                'url' => $nhm_request_body['logonUrl']
+                            ));
                         }
                         else {
                             throw new HttpException(400, 'Bad response, submission to NHM failed');
@@ -270,4 +291,43 @@ class DefaultController extends Controller
         }
     }
 
+    /**
+     * @Route("/webnotifications", name="webnotifications")
+     */
+    public function webNotificationsAction(Request $request): Response
+    {
+        return $this->render('default/webnotifications.html.twig');
+    }
+
+    /**
+     * @Route("/geolocation", name="geolocation")
+     */
+    public function geoLocationAction(Request $request): Response
+    {
+        return $this->render('default/geolocation.html.twig');
+    }
+
+    /**
+     * @Route("/yahooweather", name="yahooweather")
+     */
+    public function yahooWeatherAction(Request $request): Response
+    {
+        return $this->render('default/yahooweather.html.twig');
+    }
+
+    /**
+     * @Route("/aerodomschedulefetch", name="aerodomschedulefetch")
+     */
+    public function aerodomScheduleFetchAction(Request $request): Response
+    {
+        return $this->render('default/aerodomschedulefetch.html.twig');
+    }
+
+    /**
+     * @Route("/advideumtest", name="advideumtest")
+     */
+    public function advideumTestAction(Request $request): Response
+    {
+        return $this->render('default/advideumtest.html.twig');
+    }
 }

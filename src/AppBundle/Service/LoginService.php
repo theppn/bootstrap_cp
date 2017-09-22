@@ -19,6 +19,12 @@ use Facebook\Exceptions\FacebookSDKException;
 
 class LoginService {
     private $nhm_api_url;
+    private $sendin_blue_api_key;
+    private $sendin_blue_api_timeout;
+    private $sendin_blue_api_from_mail;
+    private $sendin_blue_api_from_name;
+    private $sendin_blue_api_tag;
+    private $send_email_on_account_creation;
     private $twitter_consumer_key;
     private $twitter_consumer_secret;
     private $facebook_app_id;
@@ -33,8 +39,14 @@ class LoginService {
     private $rest;
     private $logger;
 
-    function __construct($nhm_api_url, $twitter_consumer_key, $twitter_consumer_secret, $facebook_app_id, $facebook_client_secret, $google_client_id, $google_client_secret, $linkedin_client_id, $linkedin_client_secret, $instagram_client_id, $instagram_client_secret, $session, $rest, $logger) {
+    function __construct($nhm_api_url, $sendin_blue_api_key, $sendin_blue_api_timeout, $sendin_blue_api_from_mail, $sendin_blue_api_from_name, $sendin_blue_api_tag, $send_email_on_account_creation, $twitter_consumer_key, $twitter_consumer_secret, $facebook_app_id, $facebook_client_secret, $google_client_id, $google_client_secret, $linkedin_client_id, $linkedin_client_secret, $instagram_client_id, $instagram_client_secret, $session, $rest, $logger) {
         $this->nhm_api_url = $nhm_api_url;
+        $this->sendin_blue_api_key = $sendin_blue_api_key;
+        $this->sendin_blue_api_timeout = $sendin_blue_api_timeout;
+        $this->sendin_blue_api_from_mail = $sendin_blue_api_from_mail;
+        $this->sendin_blue_api_from_name = $sendin_blue_api_from_name;
+        $this->sendin_blue_api_tag = $sendin_blue_api_tag;
+        $this->send_email_on_account_creation = $send_email_on_account_creation;
         $this->twitter_consumer_key = $twitter_consumer_key;
         $this->twitter_consumer_secret = $twitter_consumer_secret;
         $this->facebook_app_id = $facebook_app_id;

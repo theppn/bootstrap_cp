@@ -1,0 +1,23 @@
+{% extends 'base.html.twig' %}
+
+{% block body %}
+    <div id="wrapper">
+        <div id="container">
+            <div id="welcome">
+                <p> <div id="yahoo_weather_result"></div></p>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block stylesheets %}{% endblock %}
+{% block javascripts %}
+    <!-- BELOW: testing Yahoo weather api -->
+    <script>
+        var yahooCb = function(data) {
+            document.getElementById('yahoo_weather_result').innerHTML = JSON.stringify(data);
+        };
+    </script>
+
+    <script src="https://query.yahooapis.com/v1/public/yql?q=select%20item.condition%20from%20weather.forecast%20where%20woeid%20%3D%20615702%20and%20u%3D'c'&format=json&env=store%3A%2F%2Fdatatables.org%2Falltableswithkeys&format=json&callback=yahooCb"></script>
+{% endblock %}

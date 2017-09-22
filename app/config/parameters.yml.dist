@@ -19,6 +19,12 @@ parameters:
     secret: ThisTokenIsNotSoSecretChangeIt
 
     nhm_api_url: https://nhm-dev.nomosphere.fr:8080/api/
+    sendin_blue_api_key: ShJ429gAZMkd6bOn
+    sendin_blue_api_timeout: 5000
+    sendin_blue_api_from_mail: no-reply@nomosphere.fr
+    sendin_blue_api_from_name: Nomosphere
+    sendin_blue_api_tag: bootstrap
+    send_email_on_account_creation: 1
     twitter_consumer_key: WmLclwG84WpypF1QzQ4RBO0RL
     twitter_consumer_secret: rMOLObQNwXK4xgqpgBBl8NYigrLhtLte3XfkphgsdCJF2Ti89w
     facebook_app_id: 1837790199808356

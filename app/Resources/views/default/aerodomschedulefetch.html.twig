@@ -1,0 +1,85 @@
+{% extends 'base.html.twig' %}
+
+{% block body %}
+    <div id="wrapper">
+        <div id="container">
+            <div id="welcome">
+                <p> <div>Reloading in <span id="proxy_count">0</span></div></p>
+                <p> <div id="result">PLACEHOLDER FOR PROXY RESULT</div></p>
+                <div id="proxy_result" style="display:none;"></div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block stylesheets %}
+    <style>
+        .flightable{background: #000; width: 408px; padding: 17px 8px; color: #FFF; font-size: 16px; font-family: Arial;}
+        .flightable p{font-weight: bold; font-size: 11px; text-align: center;}
+        .flightable h4{font-weight: normal; font-size: 16px;}
+        .flightable h4 span{color: #FFF200}
+
+        .titles{float: left; font-size: 11px; color: #FFF; font-weight: bold; margin-bottom: 12px;}
+        .titles span{color:#FFF200; display: block; }
+        .titles.time{width: 50px;}
+        .titles.from{width: 110px;}
+        .titles.flight{width: 75px;}
+        .titles.expected{width: 60px;}
+        .titles.remarks{width: 90px;}
+
+        .ctt{float: left; font-size: 14px; color: #FFF200; margin-bottom:7px;}
+        .ctt.time{width: 50px;}
+        .ctt.from{width: 110px;}
+        .ctt.flight{width: 75px;}
+        .ctt.expected{width: 60px;}
+        .ctt.remarks{width: 90px;}
+    </style>
+{% endblock %}
+{% block javascripts %}
+    <script>
+        /* BELOW: testing out ajax requests using php proxy to fetch static data and bypass cross-domain limitations */
+        var xhttp = new XMLHttpRequest();
+        //var targetUrl = "http://www.toulouse.aeroport.fr/passagers/vols-destinations/arrivees-du-jour";
+        var targetUrl = "http://www.aerodom.com/app/do/frontpage.aspx";
+        var requestTimer = null;
+        var countTimer = null;
+        var intervalInMs = 10000;
+        var startCountTimer = function() {
+            stopCountTimer();
+            document.getElementById('proxy_count').innerHTML = intervalInMs/1000 ;
+            countTimer = setInterval(function() {
+                updateCountTimer();
+            }, 1000);
+        }
+        var stopCountTimer = function() {
+            clearInterval(countTimer);
+        }
+        var updateCountTimer = function() {
+            var target = document.getElementById('proxy_count');
+            target.innerHTML = (parseInt(target.innerHTML, 10) - 1);
+        }
+        var fetchData = function() {
+            xhttp.open("GET", "proxy?url=" + encodeURI(targetUrl) );
+            xhttp.send();
+        }
+
+        xhttp.onreadystatechange = function() {
+            if (this.readyState == 4 && this.status == 200) {
+                var result, buffer;
+                buffer = this.responseText.replace(/<img[^>]*>/g, "").replace(/<script[^>]*>/g, "").replace(/<link[^>]*>/g, "");
+                document.getElementById('proxy_result').innerHTML = buffer;
+                //result = document.getElementById('result-wrapper');
+                result = document.getElementsByClassName('flightable')[0];
+                document.getElementById('result').innerHTML = '';
+                document.getElementById('result').appendChild(result);
+                document.getElementById('proxy_result').innerHTML = '';
+            }
+        };
+        fetchData();
+        startCountTimer();
+        requestTimer = setInterval(function() {
+            fetchData();
+            startCountTimer();
+        }, intervalInMs);
+    </script>
+{% endblock %}
