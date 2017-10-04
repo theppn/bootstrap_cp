@@ -1,0 +1,149 @@
+{% extends 'base.html.twig' %}
+
+{% block body %}
+    <div id="wrapper">
+        <div id="container">
+            <div id="notification_form">
+                {{ form_start(pushNotificationForm) }}
+                <p> Notification status: <div id="notification_status"></div></p>
+                <p> Title {{ form_widget(pushNotificationForm.title, {'attr': {'value': 'Computer says: '} })}}</p>
+                <p> Msg {{ form_widget(pushNotificationForm.message, {'attr': {'value': 'Hohoho! Now I have a machine gun!'} })}}</p>
+                <p> Icon {{ form_widget(pushNotificationForm.icon, {'attr': {'value': 'http://images5.fanpop.com/image/photos/24800000/John-McClane-john-mcclane-24823024-200-200.jpg'} })}}</p>
+                <p> Url {{ form_widget(pushNotificationForm.url, {'attr': {'value': 'http://www.nomosphere.fr'} })}}</p>
+                <p> Timeout {{ form_widget(pushNotificationForm.timeout, {'attr': {'value': '1'} })}}</p>
+                <p> {{ form_widget(pushNotificationForm.save, {'attr': {'value': 'Yippee ki-yay'} })}}</p>
+                {{ form_end(pushNotificationForm) }}
+            </div><br>
+            <div id="push_info">
+                <p> Your push token | <a id="register" href="#" onclick="sendTokenToServer();">Register my push token</a></p>
+                <p><span id="push_token"></span></p>
+                <p> List of push tokens known |  <a href="pushapiremovealldevices">Purge this list</a> </p>
+                {% for device in deviceList %}
+                    <a href="pushapiremovedevice/{{ device.token }}">{{ device.token }}</a> <br>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block stylesheets %}
+{% endblock %}
+{% block javascripts %}
+    <!-- BELOW: testing notification api -->
+    <script type="text/javascript">
+        if (Notification) {
+            var notificationCheckPermission = function() {
+                return Notification.permission;
+            }
+
+            var notificationAskPermission = function() {
+                return Notification.requestPermission().then(function(result) {
+                    console.log(result);
+                });
+            }
+
+            var notificationMake = function(payload) {
+                console.log("Making a new Notification", payload);
+                var data = payload.data;
+                var title = data.title;
+                var options = {
+                    'body': data.body,
+                    'icon': data.icon
+                }
+                setTimeout(function() {
+                    var notif = new Notification(title, options);
+                    notif.addEventListener('click', function() {
+                        window.open(data.url, '_self')
+                    });
+                }, parseInt(data.timeout)*1000);
+            }
+
+            var notificationRun = function() {
+                var permission = notificationCheckPermission();
+                switch (permission) {
+                    case "denied":
+                        console.log("Notifications blocked by user");
+                        document.getElementById('notification_status').innerHTML = "User denied notifications permission.";
+                        return -1;
+                        break;
+                    case "granted":
+                        console.log("Notification allowed by user");
+                        document.getElementById('notification_status').innerHTML = "User granted notifications permission.";
+                        return 1;
+                        break;
+                    case "default":
+                    default:
+                        console.log("Notification permission unknown, ask user");
+                        document.getElementById('notification_status').innerHTML = "Notification permission unknown, ask user";
+                        notificationAskPermission().then(function() {
+                            notificationRun();
+                        });
+                        return 0;
+                }
+            }
+            notificationRun();
+        }
+    </script>
+    <script src="https://www.gstatic.com/firebasejs/4.3.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/4.3.1/firebase-messaging.js"></script>
+    <script type="application/javascript">
+        function resetUI() {
+            messaging.getToken().then(function(currentToken) {
+                if (currentToken) {
+                    document.getElementById('push_token').innerHTML = currentToken;
+                }
+            });
+        }
+
+        function isTokenSentToServer() {
+            return window.localStorage.getItem('sentToServer') == 1;
+        }
+
+        function setTokenSentToServer(sent) {
+            window.localStorage.setItem('sentToServer', sent ? 1 : 0);
+        }
+
+        function sendTokenToServer() {
+            var token = document.getElementById('push_token').innerHTML;
+            var http = new XMLHttpRequest();
+            var url = "pushapiadddevice/" + encodeURI(token);
+            var params = "";
+            http.open("POST", url, true);
+            http.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+
+            http.onreadystatechange = function() {//Call a function when the state changes.
+                if(http.readyState == 4 && http.status == 200) {
+                    console.log('sendTokenToServer: done');
+                }
+            }
+            http.send(params);
+            location.reload();
+        }
+
+        /*/* init Firebase messaging */
+        var config = {
+            apiKey: "AIzaSyCQlLNOJ30MflNJA5IT79AxG7clW2L5bUg ",
+            messagingSenderId: "244361723958",
+        };
+        firebase.initializeApp(config);
+        const messaging = firebase.messaging();
+        navigator.serviceWorker.register("{{ asset('asset/js/sw.js') }}").then(function (registration) {
+            messaging.useServiceWorker(registration);
+            /* events handlers */
+            messaging.onTokenRefresh(function () {
+                messaging.getToken().then(function (newToken) {
+                    setTokenSentToServer(false);
+                    resetUI();
+                }).catch(function (e) {
+                    console.log('Unable to retrieve refreshed token ', err);
+                    showToken('Unable to retrieve refreshed token ', err);
+                });
+            });
+            messaging.onMessage(function (payload) {
+                console.log("Message received. ", payload);
+                notificationMake(payload);
+            });
+            resetUI();
+        });
+    </script>
+{% endblock %}

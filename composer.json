@@ -20,6 +20,7 @@
         "facebook/graph-sdk": "^5.4",
         "google/apiclient": "^2.0",
         "incenteev/composer-parameter-handler": "~2.0",
+        "redjanym/php-firebase-cloud-messaging": "^1.1",
         "sendinblue/sendinblue-api-bundle": "^2.0",
         "sensio/distribution-bundle": "~4.0",
         "sensio/framework-extra-bundle": "^3.0.2",

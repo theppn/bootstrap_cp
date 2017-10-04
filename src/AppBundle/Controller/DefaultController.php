@@ -2,12 +2,21 @@
 
 namespace AppBundle\Controller;
 
+use AppBundle\AppBundle;
+use AppBundle\Entity\Device;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Route;
 use Symfony\Bundle\FrameworkBundle\Controller\Controller;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpKernel\Exception\HttpException;
+use AppBundle\Form\AddDeviceType;
+use AppBundle\Form\PushNotificationType;
+use sngrl\PhpFirebaseCloudMessaging\Client;
+use sngrl\PhpFirebaseCloudMessaging\Message;
+use sngrl\PhpFirebaseCloudMessaging\Recipient\Device as FireBaseDevice;
+use sngrl\PhpFirebaseCloudMessaging\Notification;
+use Twig\Tests\EnvironmentTest\Extension;
 
 
 class DefaultController extends Controller
@@ -297,6 +306,104 @@ class DefaultController extends Controller
     public function webNotificationsAction(Request $request): Response
     {
         return $this->render('default/webnotifications.html.twig');
+    }
+
+    /**
+     * @Route("/pushapi", name="pushapi")
+     */
+    public function pushApiAction(Request $request): Response
+    {
+        // get device tokens list
+        $deviceList = $this->getDoctrine()->getRepository('AppBundle:Device')->findAll();
+        // prepare form to push notification
+        $pushNotificationForm = $this->createForm(PushNotificationType::class);
+        $pushNotificationForm->handleRequest($request);
+        if ($pushNotificationForm->isSubmitted() && $pushNotificationForm->isValid()) {
+            $formData = $pushNotificationForm->getData();
+            $title = $formData['title'];
+            $msg = $formData['message'];
+            $icon = $formData['icon'];
+            $url = $formData['url'];
+            $timeout = $formData['timeout'];
+            $server_key = $this->getParameter('firebase_cloud_key');
+            $client = new Client();
+            $client->setApiKey($server_key);
+            $message = new Message();
+            $message->setPriority('high');
+            foreach($deviceList as $key => $value) {
+                $message->addRecipient(new FireBaseDevice($value->getToken()));
+            }
+            $message
+                //->setNotification(new Notification($title, $msg))
+                ->setData([
+                    'title' => $title,
+                    'body' => $msg,
+                    'icon' => $icon,
+                    'url' => $url,
+                    'timeout' => $timeout
+                ])
+            ;
+            $response = $client->send($message);
+            $this->debug('PUSH API responded ' . \serialize($response));
+            if ($response->getStatusCode() != "200") {
+                throw new HttpException(intval($response->getStatusCode()), strval($response->getBody()->getContents()));
+            }
+        }
+        return $this->render('default/pushapi.html.twig', [
+            'deviceList' => $deviceList,
+            'pushNotificationForm' => $pushNotificationForm->createView()
+        ]);
+    }
+
+    /**
+     * @Route("/pushapiadddevice/{token}", name="pushapiadddevice")
+     */
+    public function pushApiAddDeviceAction(string $token): RedirectResponse {
+        $dtoken = urldecode($token);
+        $em = $this->getDoctrine()->getManager();
+        $device = $em->getRepository('AppBundle:Device')->findOneBy(['token' => $dtoken]);
+        // device is already known
+        if ($device) {
+            $url = $this->generateUrl('pushapi');
+            return new RedirectResponse($url);
+        }
+        $device = new Device();
+        $device->setToken($dtoken);
+        $em->persist($device);
+        $em->flush();
+        $url = $this->generateUrl('pushapi');
+        return new RedirectResponse($url);
+    }
+
+    /**
+     * @Route("/pushapiremovedevice/{token}", name="pushapiremovedevice")
+     */
+    public function pushApiRemoveDeviceAction(string $token): RedirectResponse {
+        $dtoken = urldecode($token);
+        $em = $this->getDoctrine()->getManager();
+        $device = $em->getRepository('AppBundle:Device')->findOneBy(['token' => $dtoken]);
+        if (!$device) {
+            $url = $this->generateUrl('pushapi');
+            return new RedirectResponse($url);
+        }
+        $em->remove($device);
+        $em->flush();
+        $url = $this->generateUrl('pushapi');
+        return new RedirectResponse($url);
+    }
+
+    /**
+     * @Route("/pushapiremovealldevices", name="pushapiremovealldevices")
+     */
+    public function pushApiRemoveAllDevicesAction(): RedirectResponse {
+        $em = $this->getDoctrine()->getManager();
+        $deviceList = $em->getRepository('AppBundle:Device')->findAll();
+        foreach($deviceList as $device) {
+            $em->remove($device);
+        }
+        $em->flush();
+        $url = $this->generateUrl('pushapi');
+        return new RedirectResponse($url);
     }
 
     /**
