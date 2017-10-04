@@ -29,62 +29,6 @@
 {% block stylesheets %}
 {% endblock %}
 {% block javascripts %}
-    <!-- BELOW: testing notification api -->
-    <script type="text/javascript">
-        if (Notification) {
-            var notificationCheckPermission = function() {
-                return Notification.permission;
-            }
-
-            var notificationAskPermission = function() {
-                return Notification.requestPermission().then(function(result) {
-                    console.log(result);
-                });
-            }
-
-            var notificationMake = function(payload) {
-                console.log("Making a new Notification", payload);
-                var data = payload.data;
-                var title = data.title;
-                var options = {
-                    'body': data.body,
-                    'icon': data.icon
-                }
-                setTimeout(function() {
-                    var notif = new Notification(title, options);
-                    notif.addEventListener('click', function() {
-                        window.open(data.url, '_self')
-                    });
-                }, parseInt(data.timeout)*1000);
-            }
-
-            var notificationRun = function() {
-                var permission = notificationCheckPermission();
-                switch (permission) {
-                    case "denied":
-                        console.log("Notifications blocked by user");
-                        document.getElementById('notification_status').innerHTML = "User denied notifications permission.";
-                        return -1;
-                        break;
-                    case "granted":
-                        console.log("Notification allowed by user");
-                        document.getElementById('notification_status').innerHTML = "User granted notifications permission.";
-                        resetUI()
-                        return 1;
-                        break;
-                    case "default":
-                    default:
-                        console.log("Notification permission unknown, ask user");
-                        document.getElementById('notification_status').innerHTML = "Notification permission unknown, ask user";
-                        notificationAskPermission().then(function() {
-                            notificationRun();
-                        });
-                        return 0;
-                }
-            }
-            notificationRun();
-        }
-    </script>
     <script src="https://www.gstatic.com/firebasejs/4.3.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/4.3.1/firebase-messaging.js"></script>
     <script type="application/javascript">
@@ -146,5 +90,61 @@
             });
             resetUI();
         });
+    </script>
+    <!-- BELOW: testing notification api -->
+    <script type="text/javascript">
+        if (Notification) {
+            var notificationCheckPermission = function() {
+                return Notification.permission;
+            }
+
+            var notificationAskPermission = function() {
+                return Notification.requestPermission().then(function(result) {
+                    console.log(result);
+                });
+            }
+
+            var notificationMake = function(payload) {
+                console.log("Making a new Notification", payload);
+                var data = payload.data;
+                var title = data.title;
+                var options = {
+                    'body': data.body,
+                    'icon': data.icon
+                }
+                setTimeout(function() {
+                    var notif = new Notification(title, options);
+                    notif.addEventListener('click', function() {
+                        window.open(data.url, '_self')
+                    });
+                }, parseInt(data.timeout)*1000);
+            }
+
+            var notificationRun = function() {
+                var permission = notificationCheckPermission();
+                switch (permission) {
+                    case "denied":
+                        console.log("Notifications blocked by user");
+                        document.getElementById('notification_status').innerHTML = "User denied notifications permission.";
+                        return -1;
+                        break;
+                    case "granted":
+                        console.log("Notification allowed by user");
+                        document.getElementById('notification_status').innerHTML = "User granted notifications permission.";
+                        resetUI()
+                        return 1;
+                        break;
+                    case "default":
+                    default:
+                        console.log("Notification permission unknown, ask user");
+                        document.getElementById('notification_status').innerHTML = "Notification permission unknown, ask user";
+                        notificationAskPermission().then(function() {
+                            notificationRun();
+                        });
+                        return 0;
+                }
+            }
+            notificationRun();
+        }
     </script>
 {% endblock %}
