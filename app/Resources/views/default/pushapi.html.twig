@@ -69,6 +69,7 @@
                     case "granted":
                         console.log("Notification allowed by user");
                         document.getElementById('notification_status').innerHTML = "User granted notifications permission.";
+                        resetUI()
                         return 1;
                         break;
                     case "default":
